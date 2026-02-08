@@ -10,7 +10,7 @@ This system is for you if you want to build a Lovable app that is:
 - ✅ **Easy to extend** - New features plug into existing contracts
 - ✅ **Easy for future developers to understand** - Self-documenting architecture with compliance checkpoints
 
-**Multi-tenant ready:** This system supports opening your app to friends, family, and other users when you're ready. You don't have to decide now; the multi-user data protection patterns are built in from day one, so you can scale from personal use to multi-user SaaS without a rewrite.
+**Multi-user (tenant) ready:** This system supports opening your app to friends, family, and other users when you're ready. You don't have to decide now; the multi-user data protection patterns are built in from day one, so you can scale from personal use to multi-user SaaS without a rewrite.
 
 ## How to Use This System
 
