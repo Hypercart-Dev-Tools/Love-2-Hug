@@ -4,7 +4,9 @@
   "description": "Makes your Lovable code into hugable for users.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "capture": "node scripts/capture-spa.mjs",
+    "capture:verify": "./scripts/capture-and-verify.sh"
   },
   "repository": {
     "type": "git",
