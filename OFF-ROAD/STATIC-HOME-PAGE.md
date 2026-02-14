@@ -218,6 +218,9 @@ This is unconventional but eliminates all maintenance risk. The tradeoff is a no
 
 These options automate or enhance what you proved works in Part 1. **Do Part 1 first** — if `/seo-test/` doesn't show content to crawlers, these won't either, and you'll have wasted time on infrastructure.
 
+> **Shortcut: SEO Capture Tool (Experimental Alpha)**
+> If you want a single command that handles the entire capture → inline CSS → strip JS → validate SEO → verify pipeline, see [SEO-CAPTURE-TOOL.md](SEO-CAPTURE-TOOL.md). Run `node scripts/capture-spa.mjs <url>` or `./scripts/capture-and-verify.sh <url>` for the full flow with local preview. The tool was built from real-world experience on this project and automates everything in Option A below.
+
 ## Option A: Prerender at Build Time (Puppeteer Postbuild)
 
 **Goal:** Automatically generate a static HTML snapshot of your home page after every build.
