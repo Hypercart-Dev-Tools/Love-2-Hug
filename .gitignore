@@ -1,0 +1,4 @@
+\n# Node.js dependencies\n/node_modules
+/home-page-assets
+/node_modules
+.DS_Store

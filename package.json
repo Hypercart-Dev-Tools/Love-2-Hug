@@ -1,0 +1,24 @@
+{
+  "name": "hug2love-recipes",
+  "version": "1.0.0",
+  "description": "Makes your Lovable code into hugable for users.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hypercart-Dev-Tools/Love-2-Hug.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Hypercart-Dev-Tools/Love-2-Hug/issues"
+  },
+  "homepage": "https://github.com/Hypercart-Dev-Tools/Love-2-Hug#readme",
+  "devDependencies": {
+    "puppeteer": "^24.37.3"
+  }
+}

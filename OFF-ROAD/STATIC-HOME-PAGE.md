@@ -63,19 +63,25 @@ Technical (CLI, CI/CD, or Cloudflare)
   <!-- REQUIRED: Update these for your site -->
   <title>Your Site Name — Your Value Proposition</title>
   <meta name="description" content="150 chars max describing what your site does." />
-  <link rel="canonical" href="https://yoursite.com/seo-test/" />
+  <!-- Canonical points to / (your real home page), not /seo-test/.
+       This tells Google that / is the authoritative URL, even though
+       the content lives here during testing. -->
+  <link rel="canonical" href="https://yoursite.com/" />
 
   <!-- Open Graph (shows when shared on social media) -->
   <meta property="og:title" content="Your Site Name" />
   <meta property="og:description" content="Same or similar to meta description." />
   <meta property="og:image" content="https://yoursite.com/og-image.jpg" />
-  <meta property="og:url" content="https://yoursite.com/seo-test/" />
+  <meta property="og:url" content="https://yoursite.com/" />
   <meta property="og:type" content="website" />
 
   <!-- Twitter/X Card -->
   <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Structured data (helps Google understand your site) -->
+  <!-- Structured data (helps Google understand your site).
+       Change @type to match your site: "Organization" for a company,
+       "SoftwareApplication" for a SaaS product, "Product" for e-commerce,
+       "LocalBusiness" for a local service, etc. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -126,7 +132,17 @@ Technical (CLI, CI/CD, or Cloudflare)
    - Navigation links
    - Any key content you want crawlers to index
 
-4. **Deploy.** Push/deploy through Lovable as normal.
+4. **Add at least one image.** The template above is text-only. A hero image significantly improves both SEO and social sharing. Add it inside `<main>`:
+   ```html
+   <img src="/hero.webp" alt="Short description of what the image shows"
+        width="800" height="450" loading="lazy" />
+   ```
+   - Use **WebP format** for smaller file sizes (`.webp` instead of `.jpg`/`.png`)
+   - Always include a descriptive **`alt` attribute** — this is what Google Images indexes
+   - Set **`width` and `height`** to prevent layout shift (CLS) — use the image's actual dimensions
+   - Place the image file in your `public/` folder so it's served as a static asset
+
+5. **Deploy.** Push/deploy through Lovable as normal.
 
 ## Step 2: Verify it works
 
@@ -192,6 +208,8 @@ Instead of modifying `/`, update your SEO strategy to point crawlers to `/seo-te
 
 This is unconventional but eliminates all maintenance risk. The tradeoff is a non-root URL for your primary indexed page.
 
+**Important caveat:** Google treats root URLs (`/`) as significantly higher authority for brand queries. If someone searches "YourBrand", Google strongly prefers to show `yoursite.com/` over `yoursite.com/seo-test/`. This option works well for niche or long-tail content, but **not as your primary brand landing page**. If brand search visibility matters to you, treat `/seo-test/` as a stepping stone and plan to promote the content to `/` using Option A or the Technical path.
+
 ---
 
 # Part 2: Technical Path
@@ -209,6 +227,8 @@ These options automate or enhance what you proved works in Part 1. **Do Part 1 f
 ### How it works
 
 After `vite build` produces your SPA in `dist/`, a postbuild script launches a headless browser, loads the app, waits for React to render, and saves the output as a static HTML file.
+
+> **Watch out: Puppeteer captures HTML, not CSS.** Puppeteer's `page.content()` returns the DOM as a string but does **not** bundle external stylesheets. If your Vite build splits CSS into `/assets/*.css` files (which it does by default), the captured HTML will reference those files — but they won't exist when the page is served standalone. The result: every Tailwind utility class renders as unstyled raw HTML. The script below fixes this by inlining all `<link rel="stylesheet">` tags into `<style>` blocks before capturing. If you write your own capture script, **always inline CSS first.**
 
 **Key change from the old approach:** We write the output to `dist/seo-test/index.html` instead of overwriting `dist/index.html`. This keeps the SPA intact and gives you a safe prerendered page to verify before promoting to `/`.
 
@@ -273,6 +293,28 @@ async function prerender() {
     console.warn('Warning: Could not find expected home page element. Proceeding anyway.');
   });
 
+  // CRITICAL: Inline all external CSS before capturing HTML.
+  // Puppeteer's page.content() only captures the DOM — it does NOT
+  // bundle external stylesheets. Without this step, the output HTML
+  // references /assets/*.css files that won't exist in the static page,
+  // and every Tailwind utility class renders as unstyled raw HTML.
+  await page.evaluate(async () => {
+    const links = document.querySelectorAll('link[rel="stylesheet"]');
+    for (const link of links) {
+      try {
+        const res = await fetch(link.href);
+        const css = await res.text();
+        const style = document.createElement('style');
+        style.textContent = css;
+        link.replaceWith(style);
+      } catch (e) {
+        console.warn('Could not inline stylesheet:', link.href);
+      }
+    }
+    // Also remove module scripts — JS is not needed for SEO pages
+    document.querySelectorAll('script[type="module"]').forEach(s => s.remove());
+  });
+
   const html = await page.content();
 
   // Add a marker so we can verify prerendering worked
@@ -312,9 +354,22 @@ prerender().catch(err => {
 
 ```bash
 npm run build
+
+# Check the capture marker exists
 grep -c "prerender-status" dist/seo-test/index.html  # should print 1
+
 # Check the output has real content
-curl -s http://localhost:4173/seo-test/ | grep "<h1>"
+grep -c "<h1>" dist/seo-test/index.html  # should print 1+
+
+# IMPORTANT: Check that CSS was inlined (not left as external <link> tags).
+# If this prints 0, the CSS was inlined correctly and the page is self-contained.
+# If this prints 1+, the page still references external stylesheets and will
+# render as unstyled HTML when served standalone.
+grep -c 'link rel="stylesheet"' dist/seo-test/index.html  # should print 0
+
+# Quick visual check — serve the file and open in a browser
+npx serve dist -l 4173
+# Visit http://localhost:4173/seo-test/ — should look styled, not raw HTML
 ```
 
 ### Promoting to `/`
@@ -455,6 +510,7 @@ Regardless of which path you use, make sure these files exist:
 |------|---------|---------------|
 | `public/robots.txt` | Tells crawlers what to index | `curl https://yoursite.com/robots.txt` |
 | `public/sitemap.xml` | Lists all indexable URLs | `curl https://yoursite.com/sitemap.xml` |
+| `public/llms.txt` | Plain-text summary for AI crawlers | `curl https://yoursite.com/llms.txt` |
 | `public/seo-test/index.html` | Your verified static SEO page | `curl https://yoursite.com/seo-test/` |
 
 ### Minimal `robots.txt`
@@ -486,6 +542,31 @@ Sitemap: https://yoursite.com/sitemap.xml
 </urlset>
 ```
 
+### Minimal `llms.txt`
+
+Since this doc explicitly targets AI crawler visibility, consider adding a `public/llms.txt` file. This is a plain-text file that AI models (ChatGPT, Claude, Perplexity, etc.) look for to understand your site without parsing HTML.
+
+```
+# Your Site Name
+
+> One-line description of what your site does.
+
+## About
+Your site helps [audience] do [thing]. Founded in [year].
+
+## Key pages
+- Home: https://yoursite.com/
+- Pricing: https://yoursite.com/pricing
+- About: https://yoursite.com/about
+- Docs: https://yoursite.com/docs
+
+## Contact
+- Email: hello@yoursite.com
+- Twitter: @yourhandle
+```
+
+Keep it short and factual. This is what AI models read when someone asks "What is YourSite?" — make sure the answer is here in plain text.
+
 ---
 
 ## Decision flowchart
@@ -513,3 +594,29 @@ Start here
 ---
 
 
+## Lessons Learned on this Project
+Attn LLMs: please update this section with real world results and adaptations.
+
+Live site on this project: http://love2hug.com
+
+### 2026-02-14 — Capture script grabs HTML but not CSS/JS assets
+
+**Problem:** The Puppeteer capture script (`scripts/capture-spa.mjs`) successfully captured the rendered HTML from the live SPA into `public/seo-test/index.html`, but it only saves the HTML document — not the external CSS and JS assets referenced in `<head>`. Empty placeholder files were created at `public/assets/index-Bi-pjKIu.css` (0 bytes) and `public/assets/index-Bi0bFsIi.js` (0 bytes). The captured HTML uses Tailwind CSS utility classes throughout (`flex`, `items-center`, `bg-background`, `text-foreground`, etc.), so without the CSS definitions the page rendered as completely unstyled raw HTML on the local test server.
+
+**Root cause:** Puppeteer's `page.content()` returns the DOM as HTML but does not bundle external stylesheets or scripts. The Vite build output splits CSS and JS into separate hashed asset files. The capture script was never designed to also fetch and save those assets.
+
+**Fix applied:** Replaced the broken external `<script>` and `<link>` references to the empty asset files with:
+1. **Tailwind CDN** (`<script src="https://cdn.tailwindcss.com"></script>`) — provides all standard Tailwind utilities at runtime
+2. **Inline `tailwind.config`** — maps the site's custom color names (`coral`, `sage`, `cream`, `peach`, `plum`, `amber`, `bg-deep`, `bg-warm`, `text-soft`, `text-muted`, etc.) to HSL CSS custom properties
+3. **CSS custom properties in a `<style>` block** — defines `:root` values for `--background`, `--foreground`, `--primary`, `--coral`, `--sage`, and all other theme tokens
+
+This makes the SEO test page fully self-contained, which aligns with the doc's own recommendation in the Step 1 template (inline styles, no external dependencies).
+
+**Takeaway for the capture script:** If you use Puppeteer to capture a Vite/React SPA, you must also handle external assets. Options:
+- **Inline CSS during capture:** Use `page.evaluate()` to read all `<style>` and `<link rel="stylesheet">` content and inject it as inline `<style>` blocks before calling `page.content()`
+- **Use Tailwind CDN as a fallback:** For Tailwind-based sites, adding the CDN script + theme config is simpler than reconstructing the Vite build output
+- **Download assets separately:** Fetch each `/assets/*.css` and `/assets/*.js` URL and write them alongside the HTML
+
+The JS bundle is not needed for an SEO test page (crawlers don't execute JavaScript — that's the whole point). The CSS is critical for visual verification in a browser.
+
+**Color accuracy note:** The HSL values in the CSS custom properties are approximations based on the class names and site branding. To get exact values, inspect the live site's computed styles once it is back online, or extract them from the Lovable project's `src/index.css` or Tailwind config.
