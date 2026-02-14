@@ -63,19 +63,25 @@ Technical (CLI, CI/CD, or Cloudflare)
   <!-- REQUIRED: Update these for your site -->
   <title>Your Site Name — Your Value Proposition</title>
   <meta name="description" content="150 chars max describing what your site does." />
-  <link rel="canonical" href="https://yoursite.com/seo-test/" />
+  <!-- Canonical points to / (your real home page), not /seo-test/.
+       This tells Google that / is the authoritative URL, even though
+       the content lives here during testing. -->
+  <link rel="canonical" href="https://yoursite.com/" />
 
   <!-- Open Graph (shows when shared on social media) -->
   <meta property="og:title" content="Your Site Name" />
   <meta property="og:description" content="Same or similar to meta description." />
   <meta property="og:image" content="https://yoursite.com/og-image.jpg" />
-  <meta property="og:url" content="https://yoursite.com/seo-test/" />
+  <meta property="og:url" content="https://yoursite.com/" />
   <meta property="og:type" content="website" />
 
   <!-- Twitter/X Card -->
   <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Structured data (helps Google understand your site) -->
+  <!-- Structured data (helps Google understand your site).
+       Change @type to match your site: "Organization" for a company,
+       "SoftwareApplication" for a SaaS product, "Product" for e-commerce,
+       "LocalBusiness" for a local service, etc. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -126,7 +132,17 @@ Technical (CLI, CI/CD, or Cloudflare)
    - Navigation links
    - Any key content you want crawlers to index
 
-4. **Deploy.** Push/deploy through Lovable as normal.
+4. **Add at least one image.** The template above is text-only. A hero image significantly improves both SEO and social sharing. Add it inside `<main>`:
+   ```html
+   <img src="/hero.webp" alt="Short description of what the image shows"
+        width="800" height="450" loading="lazy" />
+   ```
+   - Use **WebP format** for smaller file sizes (`.webp` instead of `.jpg`/`.png`)
+   - Always include a descriptive **`alt` attribute** — this is what Google Images indexes
+   - Set **`width` and `height`** to prevent layout shift (CLS) — use the image's actual dimensions
+   - Place the image file in your `public/` folder so it's served as a static asset
+
+5. **Deploy.** Push/deploy through Lovable as normal.
 
 ## Step 2: Verify it works
 
@@ -191,6 +207,8 @@ Instead of modifying `/`, update your SEO strategy to point crawlers to `/seo-te
 - Link to `/seo-test/` from external sources
 
 This is unconventional but eliminates all maintenance risk. The tradeoff is a non-root URL for your primary indexed page.
+
+**Important caveat:** Google treats root URLs (`/`) as significantly higher authority for brand queries. If someone searches "YourBrand", Google strongly prefers to show `yoursite.com/` over `yoursite.com/seo-test/`. This option works well for niche or long-tail content, but **not as your primary brand landing page**. If brand search visibility matters to you, treat `/seo-test/` as a stepping stone and plan to promote the content to `/` using Option A or the Technical path.
 
 ---
 
@@ -455,6 +473,7 @@ Regardless of which path you use, make sure these files exist:
 |------|---------|---------------|
 | `public/robots.txt` | Tells crawlers what to index | `curl https://yoursite.com/robots.txt` |
 | `public/sitemap.xml` | Lists all indexable URLs | `curl https://yoursite.com/sitemap.xml` |
+| `public/llms.txt` | Plain-text summary for AI crawlers | `curl https://yoursite.com/llms.txt` |
 | `public/seo-test/index.html` | Your verified static SEO page | `curl https://yoursite.com/seo-test/` |
 
 ### Minimal `robots.txt`
@@ -485,6 +504,31 @@ Sitemap: https://yoursite.com/sitemap.xml
   </url>
 </urlset>
 ```
+
+### Minimal `llms.txt`
+
+Since this doc explicitly targets AI crawler visibility, consider adding a `public/llms.txt` file. This is a plain-text file that AI models (ChatGPT, Claude, Perplexity, etc.) look for to understand your site without parsing HTML.
+
+```
+# Your Site Name
+
+> One-line description of what your site does.
+
+## About
+Your site helps [audience] do [thing]. Founded in [year].
+
+## Key pages
+- Home: https://yoursite.com/
+- Pricing: https://yoursite.com/pricing
+- About: https://yoursite.com/about
+- Docs: https://yoursite.com/docs
+
+## Contact
+- Email: hello@yoursite.com
+- Twitter: @yourhandle
+```
+
+Keep it short and factual. This is what AI models read when someone asks "What is YourSite?" — make sure the answer is here in plain text.
 
 ---
 
